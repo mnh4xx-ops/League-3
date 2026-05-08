@@ -1,11 +1,64 @@
----
-layout: null
----
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- Hide everything until we've stripped any host-platform wrappers (Jekyll, etc.) -->
+<style id="cleanup-shield">html { visibility: hidden; }</style>
+<script>
+  // Remove any wrapper elements injected by hosts like Jekyll/GitHub Pages defaults.
+  // Strategy: keep only our app's expected top-level elements; nuke everything else.
+  (function () {
+    function cleanup() {
+      var body = document.body;
+      if (!body) return;
+
+      // Whitelist: tag names / selectors that belong to our app
+      var keepSelectors = ['HEADER', 'MAIN', 'SCRIPT', 'STYLE'];
+      var keepClasses = ['toast-container', 'modal-overlay'];
+
+      Array.prototype.slice.call(body.children).forEach(function (el) {
+        var tag = el.tagName;
+        var keep = keepSelectors.indexOf(tag) !== -1;
+        if (!keep && el.className) {
+          for (var i = 0; i < keepClasses.length; i++) {
+            if (String(el.className).indexOf(keepClasses[i]) !== -1) { keep = true; break; }
+          }
+        }
+        if (!keep) el.remove();
+      });
+
+      // Also strip any text-node nieces (raw text Jekyll may dump between tags)
+      Array.prototype.slice.call(body.childNodes).forEach(function (n) {
+        if (n.nodeType === 3 && n.textContent.trim()) n.remove();
+      });
+
+      // Strip <h1> tags Jekyll's default theme injects before our header
+      var firstHeader = document.querySelector('header');
+      if (firstHeader) {
+        var sib = firstHeader.previousSibling;
+        while (sib) {
+          var prev = sib.previousSibling;
+          sib.remove();
+          sib = prev;
+        }
+      }
+
+      // Reveal page once cleaned
+      var shield = document.getElementById('cleanup-shield');
+      if (shield) shield.remove();
+      document.documentElement.style.visibility = 'visible';
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', cleanup);
+    } else {
+      cleanup();
+    }
+    // Safety: also run on full load in case host injects late
+    window.addEventListener('load', cleanup);
+  })();
+</script>
 <title>وردل عربي · Arabic Wordle</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
