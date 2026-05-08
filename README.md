@@ -137,10 +137,10 @@
 
   .board {
     display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px;
-    /* Sized so it fits both vertically and horizontally; never overflows. */
+    /* Tighter math: reserve more room for header/keyboard, especially when embedded. */
     aspect-ratio: 5 / 6;
     width: 100%;
-    max-width: min(340px, 84vw, calc((100vh - 280px) * 5/6));
+    max-width: min(310px, 78vw, calc((100dvh - 310px) * 5/6));
     height: auto;
   }
 
@@ -341,29 +341,50 @@
   ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--border-filled); }
 
-  /* Phone-specific: reduce header chrome to leave more room for board+keyboard */
+  /* Phone-specific: aggressive shrinking */
   @media (max-width: 480px) {
-    header { padding: 8px 10px; }
-    h1 { font-size: 19px; }
-    .icon-btn { width: 34px; height: 34px; font-size: 15px; }
-    .name-pill { height: 34px; font-size: 12px; padding: 0 10px; max-width: 100px; }
-    .info-bar { font-size: 11px; padding: 3px 0; gap: 6px; }
+    header { padding: 6px 10px; }
+    h1 { font-size: 17px; }
+    .icon-btn { width: 32px; height: 32px; font-size: 14px; border-radius: 8px; }
+    .name-pill { height: 32px; font-size: 11.5px; padding: 0 9px; max-width: 90px; border-radius: 8px; }
+    .info-bar { font-size: 10.5px; padding: 2px 0; gap: 5px; }
+    .timer-badge { padding: 2px 8px; font-size: 10.5px; }
     .modal { padding: 22px 18px 18px; }
-    .tile { font-size: clamp(20px, 7vw, 28px); border-width: 2px; }
+    .tile { font-size: clamp(18px, 6vw, 26px); border-width: 2px; }
+    .keyboard-row { height: clamp(34px, 6vh, 48px); }
+    .keyboard { padding: 4px 3px calc(6px + env(safe-area-inset-bottom, 0)); gap: 4px; }
+    .board { gap: 4px; max-width: min(280px, 74vw, calc((100dvh - 270px) * 5/6)); }
+    .row { gap: 4px; }
+    .key { font-size: clamp(13px, 4vw, 17px); border-radius: 5px; }
+    .key.wide { font-size: clamp(10px, 2.8vw, 12px); }
   }
 
-  /* Short screens (landscape phones, small laptops): squeeze more */
-  @media (max-height: 640px) {
-    header { padding: 6px 10px; }
-    .info-bar { padding: 2px 0; }
-    .keyboard-row { height: clamp(34px, 6.5vh, 48px); }
-    .keyboard { padding: 4px 4px 6px; gap: 4px; }
-    .board { gap: 4px; }
-    .row { gap: 4px; }
+  /* Short viewports (e.g. embedded preview frames that eat ~150px of chrome) */
+  @media (max-height: 720px) {
+    header { padding: 5px 10px; }
+    h1 { font-size: 16px; }
+    .info-bar { padding: 1px 0; }
+    .icon-btn { width: 30px; height: 30px; font-size: 13px; }
+    .name-pill { height: 30px; font-size: 11px; padding: 0 8px; max-width: 80px; }
+    .keyboard-row { height: clamp(30px, 5.2vh, 42px); }
+    .keyboard { padding: 3px 3px 5px; gap: 3px; }
+    .board { gap: 3px; max-width: min(240px, 68vw, calc((100dvh - 220px) * 5/6)); }
+    .row { gap: 3px; }
+    .tile { font-size: clamp(16px, 5.5vw, 24px); }
+    .key { font-size: clamp(12px, 3.8vw, 16px); }
+  }
+
+  /* Very short viewports — landscape phones or heavy embed chrome */
+  @media (max-height: 600px) {
+    .keyboard-row { height: clamp(28px, 5vh, 38px); }
+    .board { max-width: min(200px, 56vw, calc((100dvh - 200px) * 5/6)); }
+    .tile { font-size: clamp(14px, 5vw, 20px); }
+    h1 { font-size: 15px; }
+    header { padding: 3px 10px; }
   }
 
   @media (min-height: 820px) and (min-width: 481px) {
-    .board { max-width: min(360px, 84vw, calc((100vh - 280px) * 5/6)); }
+    .board { max-width: min(360px, 84vw, calc((100dvh - 280px) * 5/6)); }
   }
 </style>
 </head>
@@ -678,9 +699,9 @@
   const VALID_GUESSES = new Set([...WORDS, ...EXTRA_GUESSES]);
 
   const KEYBOARD_LAYOUT = [
-    ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د'],
-    ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
-    ['ENTER','ذ','ر','ة','و','ز','ظ','BACK']
+    ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج'],
+    ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ة'],
+    ['ENTER','ء','ظ','ط','ذ','د','ز','ر','و','ى','BACK']
   ];
 
   const WORD_LENGTH = 5;
@@ -824,7 +845,9 @@
     if (key === 'ENTER') submitGuess();
     else if (key === 'BACK') { if (currentGuess.length > 0) { currentGuess.pop(); updateRow(); } }
     else if (isArabicLetter(key) && isOnKeyboard(key)) {
-      if (currentGuess.length < WORD_LENGTH) { currentGuess.push(key); updateRow(); }
+      // Normalize ى → ي (keys are visually shown as iPhone but stored as base form)
+      const ch = normalizeChar(key);
+      if (currentGuess.length < WORD_LENGTH) { currentGuess.push(ch); updateRow(); }
     }
   }
 
