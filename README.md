@@ -1,4 +1,4 @@
-[<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -45,9 +45,15 @@
     overflow: hidden;
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+    touch-action: manipulation;
   }
 
-  body { display: flex; flex-direction: column; align-items: center; height: 100vh; height: 100dvh; }
+  body {
+    display: flex; flex-direction: column; align-items: center;
+    height: 100vh;
+    height: 100dvh; /* dynamic viewport — accounts for mobile address bar */
+  }
 
   header {
     width: 100%;
@@ -99,22 +105,23 @@
 
   main {
     flex: 1; width: 100%; max-width: 560px;
-    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-    padding: 6px; overflow: hidden; min-height: 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 4px 6px; overflow: hidden; min-height: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 
   .info-bar {
     width: 100%; display: flex; align-items: center; justify-content: center;
-    gap: 10px; flex-wrap: wrap; padding: 8px 0; flex-shrink: 0;
-    font-size: 12px; color: var(--muted);
+    gap: 8px; flex-wrap: wrap; padding: 4px 0; flex-shrink: 0;
+    font-size: 11.5px; color: var(--muted);
   }
   .info-bar strong { color: var(--text); }
   .timer-badge {
     background: var(--surface-2); border: 1px solid var(--border-2);
-    padding: 4px 10px; border-radius: 999px; font-size: 11.5px;
-    color: var(--muted); font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 999px; font-size: 11px;
+    color: var(--muted); font-weight: 600; display: inline-flex; align-items: center; gap: 5px;
   }
-  .timer-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  .timer-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
   .timer-badge #mainTimer { color: var(--text); font-variant-numeric: tabular-nums; direction: ltr; font-weight: 700; }
 
   @keyframes pulse {
@@ -122,11 +129,19 @@
     50% { opacity: 0.5; transform: scale(0.85); }
   }
 
-  .board-wrap { display: flex; align-items: center; justify-content: center; flex: 1; width: 100%; padding: 6px 0; min-height: 0; }
+  /* Board takes available vertical space; keyboard always sits at the bottom */
+  .board-wrap {
+    display: flex; align-items: center; justify-content: center;
+    flex: 1 1 auto; width: 100%; padding: 4px 0; min-height: 0;
+  }
 
   .board {
-    display: grid; grid-template-rows: repeat(6, 1fr); gap: 6px;
-    width: min(330px, 80vw); height: min(396px, calc(80vw * 6 / 5)); max-height: 100%;
+    display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px;
+    /* Sized so it fits both vertically and horizontally; never overflows. */
+    aspect-ratio: 5 / 6;
+    width: 100%;
+    max-width: min(340px, 84vw, calc((100vh - 280px) * 5/6));
+    height: auto;
   }
 
   .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; direction: rtl; }
@@ -160,16 +175,27 @@
   @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-9px); } 40%,80% { transform: translateX(9px); } }
   @keyframes bounce { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-22px); } 70% { transform: translateY(-5px); } }
 
-  .keyboard { width: 100%; max-width: 560px; padding: 6px 4px 10px; direction: rtl; flex-shrink: 0; }
-  .keyboard-row { display: flex; justify-content: center; gap: 5px; margin-bottom: 6px; }
-  .keyboard-row:last-child { margin-bottom: 0; }
+  /* Keyboard always at the bottom, sized in viewport units so keys are always visible */
+  .keyboard {
+    width: 100%; max-width: 560px;
+    padding: 6px 4px calc(8px + env(safe-area-inset-bottom, 0));
+    direction: rtl; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .keyboard-row {
+    display: flex; justify-content: center; gap: 4px;
+    /* Each row: ~7vh tall, capped so it doesn't get huge on tablets */
+    height: clamp(38px, 7vh, 56px);
+  }
 
   .key {
-    flex: 1; min-width: 0; height: 52px; border: none; border-radius: 7px;
+    flex: 1; min-width: 0; height: 100%;
+    border: none; border-radius: 6px;
     background: var(--key-bg); color: var(--key-text); font-family: inherit;
-    font-size: clamp(15px, 4vw, 19px); font-weight: 700; cursor: pointer; user-select: none;
+    font-size: clamp(13px, 4.2vw, 19px); font-weight: 700; cursor: pointer; user-select: none;
     box-shadow: var(--shadow-key);
     transition: background 0.22s, transform 0.06s, box-shadow 0.15s;
+    padding: 0;
   }
   .key:hover { background: var(--key-bg-hover); }
   .key:active { transform: translateY(1px) scale(0.96); box-shadow: 0 0 0 rgba(0,0,0,0); }
@@ -315,17 +341,29 @@
   ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--border-filled); }
 
-  @media (max-width: 380px) {
-    .key { height: 46px; font-size: 15px; }
-    .key.wide { font-size: 11px; }
-    h1 { font-size: 20px; }
+  /* Phone-specific: reduce header chrome to leave more room for board+keyboard */
+  @media (max-width: 480px) {
+    header { padding: 8px 10px; }
+    h1 { font-size: 19px; }
     .icon-btn { width: 34px; height: 34px; font-size: 15px; }
-    .name-pill { height: 34px; font-size: 12px; padding: 0 10px; max-width: 110px; }
+    .name-pill { height: 34px; font-size: 12px; padding: 0 10px; max-width: 100px; }
+    .info-bar { font-size: 11px; padding: 3px 0; gap: 6px; }
     .modal { padding: 22px 18px 18px; }
+    .tile { font-size: clamp(20px, 7vw, 28px); border-width: 2px; }
   }
 
-  @media (min-height: 720px) {
-    .board { width: min(360px, 84vw); height: min(432px, calc(84vw * 6 / 5)); }
+  /* Short screens (landscape phones, small laptops): squeeze more */
+  @media (max-height: 640px) {
+    header { padding: 6px 10px; }
+    .info-bar { padding: 2px 0; }
+    .keyboard-row { height: clamp(34px, 6.5vh, 48px); }
+    .keyboard { padding: 4px 4px 6px; gap: 4px; }
+    .board { gap: 4px; }
+    .row { gap: 4px; }
+  }
+
+  @media (min-height: 820px) and (min-width: 481px) {
+    .board { max-width: min(360px, 84vw, calc((100vh - 280px) * 5/6)); }
   }
 </style>
 </head>
@@ -438,7 +476,71 @@
     'موافق','نادرة','ناشطة','ناعمة','هواتف','هندية','واسعة','واضحة','وحيدة','وردية',
     'وطنية','حركات','حساسة','حلوية','ساحرة','ساخنة','سادسة','سعودي','شركات','شعبية',
     'شفافة','شمالي','صادقة','صاروخ','صالحة','ضعيفة','حادثة','هاتفة','عاكفة','عالمي',
-    'عاملة','عظيمة','غاضبة','غامضة','فاسدة','فاشلة','فعالة','قاسية','قبيحة','قطنية'
+    'عاملة','عظيمة','غاضبة','غامضة','فاسدة','فاشلة','فعالة','قاسية','قبيحة','قطنية',
+    // ===== USER-REQUESTED =====
+    'غالية',
+    // ===== Family / people / relations =====
+    'سعيدة','حزينة','حنونة','شفيقة','بخيلة','عاشقة','مغرمة','شغوفة','عاقلة','حكيمة',
+    'شريفة','نبيلة','عريقة','شريرة','عطوفة','ودودة','رفيقة','زميلة','صاحبة','جارتي',
+    'حبيبي','زوجها','زوجته','زوجتي','بنتها','صديقي','صديقة','زميلي','صاحبي','حبيبه',
+    'ابنته','ابنها','ابنتي','جدتها','عمتها','خالتي','شاكرة','كاملة','ناقصة','مرضية',
+    // ===== Verbs (we did) =====
+    'ضربنا','وقفنا','جرينا','حملنا','خرجنا','دخلنا','صعدنا','نزلنا','ركبنا','وضعنا',
+    'رسمنا','طبخنا','غنينا','بكينا','ضحكنا','صلينا','حفظنا','فهمنا','تركنا','وصلنا',
+    'نشرنا','زرعنا','بحثنا','وجدنا','عرفنا','نسينا','نظفنا','رتبنا','شكرنا','فرحنا',
+    'لبسنا','رفعنا','دفعنا','سحبنا','منعنا','سمحنا','جمعنا','بلغنا','وصفنا','حضرنا',
+    // ===== Verbs (they did - masc plural) =====
+    'كتبوا','شربوا','لعبوا','ذهبوا','سمعوا','جلسوا','نظروا','درسوا','ضربوا','وقفوا',
+    'خرجوا','دخلوا','صعدوا','نزلوا','ركبوا','وضعوا','رسموا','طبخوا','ضحكوا','حفظوا',
+    'فهموا','لبسوا','شكروا','جمعوا','منعوا','سمحوا','نشروا','عرفوا','وجدوا','تركوا',
+    'زرعوا','بحثوا','رفعوا','دفعوا','سحبوا','رحلوا','وصلوا','حملوا','بلغوا','وصفوا',
+    // ===== Verbs (they - fem plural present) =====
+    'يكتبن','يدرسن','يلعبن','يشربن','يفهمن','يجلسن','يسمعن','ينظرن','يطبخن','يرسمن',
+    'يخرجن','يدخلن','يصعدن','ينزلن','يركبن','يلبسن','يحملن','يضربن','يفعلن','يقولن',
+    'يبكين','يضحكن','يفرحن','يحفظن','يعرفن','تكتبن','تدرسن','تلعبن','تشربن','تجلسن',
+    // ===== Cities, countries, nationalities =====
+    'لبنان','عراقي','دمشقي','بغداد','بيروت','طهران','موسكو','طوكيو','باريس','مدريد',
+    'برلين','نابلس','مصرية','سورية','يمنية','قطرية','تركية','صينية','قروية','ريفية',
+    'مدنية','بحرية','نهرية','حضرية','بيتية','عماني','يابان','جنوبي','شموعة','جدارة',
+    // ===== Time / nature =====
+    'صباحه','يومها','صباحي','حاليا','سابقا','لاحقا','يوميا','شهرية','سنوات','صيفية',
+    'شتوية','ربيعي','حرارة','جبلية','سواحل','جوامع','كواكب','صخرية','قارات','سماوي',
+    'ظهيرة','صباحا','نهارا','رياحه','صلوات','مساجد','مشايخ','مكيدة','عبادة','عاطفة',
+    // ===== Daily life / objects =====
+    'مطابخ','صالات','محلات','عملات','دولار','دينار','محفظة','مالية','واحدة','ضمانة',
+    'حضانة','مجلات','شاشات','شبكات','مواقع',
+    'هاتفي','هاتفه','مطعمي','بطاطا','مانجو','مشروب','شطيرة','حليبه','فطيرة','كعكات',
+    // ===== Sports / arts / culture =====
+    'لاعبة','مدربة','منتخب','خاسرة','تصويت','محطات','طيران','مسافر','رياضي','لوحات',
+    'رسامة','مغنية','شاعرة','مسرحي','سينما','رواية','خيالي','ملحمة','نغمات','جيتار',
+    // ===== Education =====
+    'دراسة','محاضر','فصلية','نحوية','صرفية','بلاغة','نقدية','شعرية','نثرية','لغوية',
+    'خاتمة','منطقي','فلسفة','توابع','طالبة','مقولة','علوما','مكتشف','حكمته','دروسه',
+    // ===== Body parts / possessives =====
+    'عضلات','دماغه','جسدها','صدرها','بطنها','كتفها','ظهرها','رقبتي','عينها','شعرها',
+    'لسانه','وجهها','يديها','قدمها','قدماه','شفتيه','حواسه','عقلها','قلبها','روحها',
+    // ===== Adjectives & states =====
+    'متينة','رقيقة','غليظة','ثقيلة','كسولة','مريضة','سليمة','مظلمة','مشرقة','مالحة',
+    'مرجوة','مزيلة','مكوية','مزينة','كثيرة','قليلة','فرحان','تعبان','شبعان','جوعان',
+    'نعسان','يقظان','ندمان','سكران','جالبة','طازجة','جذابة','حيوية','مثقفة','متخصص',
+    'مبدعة',
+    // remove the رائعة line, replace with safe word:
+    'مفتوح','مطلوب','مظنون','معدلة','مفعمة','مقابل','منهاج','منهجي','مسلسل','محسوس',
+    // ===== Verbs (commands fem) =====
+    'اكتبي','العبي','اشربي','اذهبي','اجلسي','اسمعي','ادرسي','انتظر','اكتشف','استمر',
+    // ===== Misc =====
+    'فكرته','فكرتي','نوعها','هدفها','وقتها','وعدها','مبلغه','جلسته','رغبات','رواتب',
+    'صفقات','صبيان','شواهد','ضواحي','طلابي','ظنوني','عظمتك','عناية','فحولة','فكاهة',
+    'قاتله','كاتبه','كاتبي','كرتون','لاحقة','لمسات','مجزرة','مجالا','مجدول','مدخول',
+    'مذيعة','مدفون','مرفوض','محبوس','محترف','محذور',
+    // safe additions:
+    'محسود','محظوظ','مكنون','مزروع','مزهرة','مسامح','مكتسب','منتظم','نازحة','نسرين',
+    // ===== More =====
+    'ابتسم','ابتدع',
+    // safe replacements:
+    'مكشوف','محجوب','مرسوم',
+    // safe:
+    'مفتول','مهضوم','منزوع','محشور','مسحور','معروض','مكدود','ملعوب','منكوب','موسوم'
   ];
 
   // ============================================================
@@ -1117,4 +1219,3 @@
 </script>
 </body>
 </html>
-](https://mnh4xx-ops.github.io/League-3/)
